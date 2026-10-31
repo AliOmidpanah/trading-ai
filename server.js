@@ -12,6 +12,7 @@ const PORT = process.env.PORT || 3000;
 const MY_USER = process.env.APP_USER || 'admin';
 const MY_PASS = process.env.APP_PASSWORD || '1234';
 
+app.get('/health', (req, res) => res.send('OK'));
 app.use(basicAuth({
   users: { [MY_USER]: MY_PASS },
   challenge: true,
