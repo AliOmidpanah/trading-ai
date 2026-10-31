@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ترمینال V5 | نوبیتکس • اندیکاتورهای مهم • همزمان • همه‌جا</title>
+<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Tahoma,sans-serif}
+body{background:#131722;color:#d1d4dc;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+header{background:#1e222d;border-bottom:1px solid #2a2e39;padding:6px 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.logo{color:#fff;font-weight:bold;white-space:nowrap}.logo span{color:#2962ff}
+#search{padding:7px 10px;background:#131722;border:1px solid #363c4e;border-radius:7px;color:#fff;width:130px;outline:none}
+#symbolSel{padding:7px;background:#2a2e39;border:none;border-radius:7px;color:#fff;font-weight:bold;max-width:170px;outline:none}
+.tf button{background:transparent;border:none;color:#787b86;padding:5px 7px;border-radius:6px;cursor:pointer;font-size:12px}
+.tf button.active,.tf button:hover{background:#2a2e39;color:#fff}
+#modeBtns button{background:#2a2e39;border:none;color:#d1d4dc;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px}
+#modeBtns button.on{background:#26a69a;color:#fff}
+#priceBox{font-size:12px;direction:ltr;background:#131722;padding:5px 10px;border-radius:7px}
+#status{margin-right:auto;font-size:12px;display:flex;align-items:center;gap:6px}
+.dot{width:9px;height:9px;border-radius:50%;background:#ef5350}.dot.ok{background:#26a69a;box-shadow:0 0 8px #26a69a}
+#indBar{background:#1e222d;border-bottom:1px solid #2a2e39;padding:5px 8px;display:flex;gap:4px;flex-wrap:wrap;align-items:center;max-height:76px;overflow-y:auto}
+#indBar span{font-size:11px;color:#787b86}
+#indBar button{background:#2a2e39;border:none;color:#d1d4dc;padding:4px 8px;border-radius:6px;cursor:pointer;font-size:11px}
+#indBar button.on{background:#2962ff;color:#fff}
+#indBar button.grp{background:#1a2030;border:1px dashed #363c4e}
+#main{flex:1;display:flex;min-height:0}
+#watch{width:240px;background:#1e222d;border-left:1px solid #2a2e39;display:flex;flex-direction:column}
+#watch h3{padding:8px 10px;font-size:12px;color:#fff;border-bottom:1px solid #2a2e39;display:flex;justify-content:space-between}
+#watchList{flex:1;overflow-y:auto}
+.w{display:flex;justify-content:space-between;padding:6px 10px;border-bottom:1px solid #252a36;cursor:pointer;font-size:12px}
+.w:hover,.w.sel{background:#2a2e39}
+.w .n{font-weight:bold;color:#fff;direction:ltr}.w .p{font-weight:bold;direction:ltr}.w .c{font-size:10px;direction:ltr}
+#center{flex:1;display:flex;flex-direction:column;min-width:0}
+#chartWrap{flex:1;position:relative;min-height:200px}
+#tvChart{position:absolute;inset:0}
+#sub1Wrap{height:130px;border-top:1px solid #2a2e39;position:relative}
+#sub2Wrap{height:130px;border-top:1px solid #2a2e39;position:relative}
+#sub1,#sub2{position:absolute;inset:0}
+.subT{position:absolute;top:4px;right:8px;font-size:10px;color:#787b86;background:rgba(19,23,34,.85);padding:2px 8px;border-radius:4px;z-index:5}
+#notice{position:absolute;top:8px;left:10px;font-size:11px;background:rgba(255,152,0,.9);color:#000;padding:4px 10px;border-radius:6px;z-index:6;display:none}
+footer{background:#1e222d;border-top:1px solid #2a2e39;padding:4px 10px;font-size:11px;color:#787b86}
+</style>
+</head>
+<body>
+<header>
+<div class="logo">📈 <span>V5</span> نوبیتکس</div>
+<input id="search" placeholder="🔍 جستجو..." oninput="filterList(this.value)">
+<select id="symbolSel" onchange="setBase(this.value)"></select>
+<div class="tf" id="tfBar"><button data-t="1m">1m</button><button data-t="5m">5m</button><button data-t="15m">15m</button><button data-t="1h" class="active">1H</button><button data-t="4h">4H</button><button data-t="1d">1D</button><button data-t="1w">1W</button></div>
+<div id="modeBtns"><button id="mUSDT" class="on" onclick="setMode('USDT')">$</button><button id="mIRT" onclick="setMode('IRT')">تومان</button></div>
+<div id="priceBox">---</div>
+<div id="status"><span class="dot" id="dot"></span><span id="stText">...</span></div>
+</header>
+<div id="indBar">
+<span>روی چارت (همزمان):</span>
+<button id="bVOL" class="on" onclick="tog('vol')">Volume</button>
+<button id="bEMA" class="on" onclick="tog('ema')">EMA20</button>
+<button id="bEMA50" onclick="tog('ema50')">EMA50</button>
+<button id="bSMA" onclick="tog('sma')">SMA50</button>
+<button id="bBB" class="on" onclick="tog('bb')">Bollinger</button>
+<button id="bVWAP" onclick="tog('vwap')">VWAP</button>
+<button id="bSUP" onclick="tog('sup')">Supertrend</button>
+<button id="bICHI" onclick="tog('ichi')">Ichimoku</button>
+<button id="bSAR" onclick="tog('sar')">Parabolic SAR</button>
+<button id="bKELT" onclick="tog('kelt')">Keltner</button>
+<button id="bDON" onclick="tog('don')">Donchian</button>
+<span> | اسیلاتور (همزمان):</span>
+<button id="bRSI" class="on" onclick="tog('rsi')">RSI</button>
+<button id="bSTOCH" onclick="tog('stoch')">Stoch</button>
+<button id="bWILL" onclick="tog('will')">W%R</button>
+<button id="bMFI" onclick="tog('mfi')">MFI</button>
+<button id="bCCI" onclick="tog('cci')">CCI</button>
+<button id="bMACD" onclick="tog('macd')">MACD</button>
+<button id="bATR" onclick="tog('atr')">ATR</button>
+<button id="bADX" onclick="tog('adx')">ADX</button>
+<button id="bOBV" onclick="tog('obv')">OBV</button>
+<button id="bROC" onclick="tog('roc')">ROC</button>
+<button id="bMOM" onclick="tog('mom')">MOM</button>
+</div>
+<div id="main">
+<div id="watch"><h3><span>👁 (<span id="cnt"></span>)</span><span id="usdtirt" style="direction:ltr"></span></h3><div id="watchList"></div></div>
+<div id="center">
+<div id="chartWrap"><div id="tvChart"></div><div id="notice"></div></div>
+<div id="sub1Wrap"><div id="sub1"></div><div class="subT">RSI / Stoch / W%R / MFI / CCI</div></div>
+<div id="sub2Wrap"><div id="sub2"></div><div class="subT">MACD / ATR / ADX / OBV / ROC / MOM</div></div>
+</div>
+</div>
+<footer>✅ همه تیک‌ها همزمان کار می‌کنند • مهم‌ترین‌ها: EMA Bollinger Supertrend Ichimoku RSI MACD • قیمت نوبیتکس + چارت بایننس زنده</footer>
+<script>
+const BASES=["BTC","ETH","BNB","SOL","XRP","DOGE","ADA","AVAX","LINK","DOT","LTC","TRX","ATOM","NEAR","ARB","OP","INJ","SUI","PEPE","APT","FET","TON","AAVE","UNI","FIL","ICP","HBAR","VET","SAND","MANA","AXS","GALA","APE","SHIB","ETC","XLM","ALGO","QNT","STX","IMX","AR","SEI","TIA","JUP","ONDO","WLD","BONK","FLOKI","JASMY","RENDER","GRT","THETA","FTM","SNX","CHZ","ENJ","CRV","MKR","LDO","RUNE","ZEC","DASH","COMP","YFI","SUSHI","BAT","ZIL","IOTA","WAVES","KAVA","1INCH","CAKE","BCH","APT","ARB","BLUR","BOME","ONDO","PENDLE","PYTH","RAY","SEI","TURBO","WIF","JASMY","NOT","DOGS","HMSTR","CATI","PENGU","VIRTUAL","PUMP","MEW","ATH","EIGEN","ENA","TAO","STRK","JUP","W","MEME","REZ","ALT","MANTA","PIXEL","PORTAL","AEVO","EDU","SAGA","TAO","VANRY","OMNI","REZ","BB","NOT","IO","ZK","LISTA","ZRO","G","SOPH","HYPE","BERA","LAYER","KAITO","IP","WAL","PARTI","FORM","CAKE","EPIC","NIL","VINE","ARC","TRUMP","MELANIA","ANIME","VANA","AIXBT","CGPT","COOKIE","AVA","SOLV","PIPPIN","SWARMS","GRIFFAIN","SPX","TAI","UFD","FARTCOIN","AI16Z","ZEREBRO","GIGA","GOAT","PNUT","ACT","CETUS","DRIFT","GRASS","MOODENG","POPCAT","ME","PENGU","USUAL","FUEL","DOGS","SUN","HOT","FLUID","VELODROME","AERO","MORPHO","EUL","FLUID","SUSHI","1INCH","AAVE","CRV","UNI","COMP","SNX","LDO","PENDLE","ETHFI","EIGEN","SWELL","K","BNSOL","JITOSOL","CLOUD"," sanctum","ORCA","RAY","JUP","DRIFT","KMNO","JTO","PYTH","W","TNSR","SHARK","UPT","RENDER","FET","AGIX","OCEAN","TAO","ARKM","WLD","INJ","SEI","SUI","APT","MOVE","APTOS","CETUS","SUI","NAVX","SCA","TURBOS","AFTER","BLUB","HIPPO","LOFI","AAA","SUDENG","FUD","LIQ","AUBRA","NAMI","ALPHA","MEMEFI","MAJOR","X","DOGS","NOT"];
+// یکتا + تمیز
+const UBASES=[...new Set(BASES.map(s=>s.trim()).filter(Boolean))];
+function toBinance(b){
+  let x=b.replace(/^(100K_|1K_|1M_|1B_)/,"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+  const map={"BONK":"BONK","FLOKI":"FLOKI","SHIB":"SHIB","BTT":"BTT","NFT":"NFT","PEPE":"PEPE","BABYDOGE":"1MBABYDOGE","CAT":"CATI"};
+  if(map[x])x=map[x];
+  if(["AAPL","AMZN","TSLA","NVDA","MSFT","GOOGL","BABA","TSM"].includes(x))return null;
+  return x+"USDT";
+}
+let BASE="BTC",MODE="USDT",INTERVAL="1h";
+let TFMAP={"1m":"1m","5m":"5m","15m":"15m","1h":"1h","4h":"4h","1d":"1d","1w":"1w"};
+let candles=[],chart,sub1C,sub2C,candleS,volS,emaS,ema50S,smaS,bbU,bbM,bbL,vwapS,supS,ichiT,ichiK,ichiA,ichiB,ichiC,sarS,keltU,keltM,keltL,donU,donL;
+let rsiS,stochK,stochD,willS,mfiS,cciS,macdL,macdS,macdH,atrS,adxS,obvS,rocS,momS;
+let show={vol:true,ema:true,ema50:false,sma:false,bb:true,vwap:false,sup:false,ichi:false,sar:false,kelt:false,don:false,rsi:true,stoch:false,will:false,mfi:false,cci:false,macd:false,atr:false,adx:false,obv:false,roc:false,mom:false};
+let wsChart=null,stats={},usdtIrt=2600000,binSym=null;
+// فرمول‌ها
+function emaA(v,p){const k=2/(p+1);let e=v[0];const o=[];v.forEach((x,i)=>{e=i===0?x:x*k+e*(1-k);if(i>=p-1)o.push({i,v:e})});return o}
+function smaA(v,p){const o=[];for(let i=p-1;i<v.length;i++){let s=0;for(let j=0;j<p;j++)s+=v[i-j];o.push({i,v:s/p})}return o}
+function rsiA(c,p=14){let g=0,l=0;const o=[];for(let i=1;i<c.length;i++){const d=c[i]-c[i-1];if(i<=p){if(d>0)g+=d;else l-=d;if(i===p){g/=p;l/=p;o.push({i,v:100-100/(1+(l===0?100:g/l))})}}else{if(d>0){g=(g*(p-1)+d)/p;l=(l*(p-1))/p}else{g=(g*(p-1))/p;l=(l*(p-1)-d)/p}o.push({i,v:100-100/(1+(l===0?100:g/l))})}}return o}
+function bbA(c,p=20,m=2){const o=[];for(let i=p-1;i<c.length;i++){const s=c.slice(i-p+1,i+1);const mid=s.reduce((a,b)=>a+b,0)/p;const sd=Math.sqrt(s.reduce((a,b)=>a+(b-mid)**2,0)/p);o.push({i,u:mid+m*sd,mid,l:mid-m*sd})}return o}
+function atrL(h,l,c,p=14){const tr=[h[0]-l[0]];for(let i=1;i<c.length;i++)tr.push(Math.max(h[i]-l[i],Math.abs(h[i]-c[i-1]),Math.abs(l[i]-c[i-1])));return tr}
+function atrA(h,l,c,p=14){return smaA(atrL(h,l,c),p)}
+function macdA(c,f=12,s=26,g=9){const ef=emaA(c,f),es=emaA(c,s);const mp={};es.forEach(x=>mp[x.i]=x.v);const line=[];ef.forEach(x=>{if(mp[x.i]!==undefined)line.push({i:x.i,v:x.v-mp[x.i]})});const sg=emaA(line.map(x=>x.v),g);return{line,sig:sg.map((x,k)=>({i:line[k+line.length-sg.length].i,v:x.v}))}}
+function stochA(c,h,l,p=14,sp=3){const k=[];for(let i=p-1;i<c.length;i++){const hh=Math.max(...h.slice(i-p+1,i+1)),ll=Math.min(...l.slice(i-p+1,i+1));k.push({i,v:hh===ll?50:(c[i]-ll)/(hh-ll)*100})}const d=smaA(k.map(x=>x.v),sp).map((x,j)=>({i:k[j+sp-1].i,v:x.v}));return{k,d}}
+function cciA(h,l,c,p=20){const tp=c.map((_,i)=>(h[i]+l[i]+c[i])/3);const o=[];for(let i=p-1;i<tp.length;i++){const s=tp.slice(i-p+1,i+1);const mid=s.reduce((a,b)=>a+b,0)/p;const md=s.reduce((a,b)=>a+Math.abs(b-mid),0)/p;o.push({i,v:md===0?0:(tp[i]-mid)/(0.015*md)})}return o}
+function adxA(h,l,c,p=14){let ph=h[0],pl=l[0],sp=0,sm=0,a=0;const dx=[];for(let i=1;i<c.length;i++){const up=h[i]-ph,dn=pl-l[i];const pp=up>dn&&up>0?up:0,pm=dn>up&&dn>0?dn:0;const tr=Math.max(h[i]-l[i],Math.abs(h[i]-c[i-1]),Math.abs(l[i]-c[i-1]));sp=(sp*(p-1)+pp)/p;sm=(sm*(p-1)+pm)/p;a=(a*(p-1)+tr)/p;const dip=a?100*sp/a:0,dim=a?100*sm/a:0;dx.push(dip+dim?100*Math.abs(dip-dim)/(dip+dim):0);ph=h[i];pl=l[i]}return smaA(dx,p)}
+function obvA(c,vv){let o=0;return c.map((x,i)=>{if(i>0)o+=x>c[i-1]?vv[i]:x<c[i-1]?-vv[i]:0;return{i,v:o}})}
+function rocA(c,p=12){const o=[];for(let i=p;i<c.length;i++)o.push({i,v:(c[i]-c[i-p])/c[i-p]*100});return o}
+function momA(c,p=10){const o=[];for(let i=p;i<c.length;i++)o.push({i,v:c[i]-c[i-p]});return o}
+function willA(h,l,c,p=14){const o=[];for(let i=p-1;i<c.length;i++){const hh=Math.max(...h.slice(i-p+1,i+1)),ll=Math.min(...l.slice(i-p+1,i+1));o.push({i,v:hh===ll?-50:(hh-c[i])/(hh-ll)*-100})}return o}
+function mfiA(h,l,c,v,p=14){const o=[];for(let i=p;i<c.length;i++){let pf=0,nf=0;for(let j=i-p+1;j<=i;j++){const tp=(h[j]+l[j]+c[j])/3,pp=(h[j-1]+l[j-1]+c[j-1])/3;if(tp>pp)pf+=tp*v[j];else if(tp<pp)nf+=tp*v[j]}o.push({i,v:nf===0?100:100-100/(1+pf/nf)})}return o}
+function supertrend(h,l,c,ap=10,mult=3){const tr=atrL(h,l,c);const atr=smaA(tr,ap);const map={};atr.forEach(x=>map[x.i]=x.v);const o=[];let dir=1,prev=0;for(let i=ap;i<c.length;i++){const hl2=(h[i]+l[i])/2;const a=map[i];if(a==null)continue;const up=hl2+mult*a,dn=hl2-mult*a;if(c[i]>prev)dir=1;else if(c[i]<prev)dir=-1;const v=dir===1?dn:up;prev=v;o.push({i,v})}return o}
+function ichimoku(h,l,c){const hh=(a,b)=>{const o=[];for(let i=b-1;i<c.length;i++){o.push({i,v:(Math.max(...h.slice(i-b+1,i+1))+Math.min(...l.slice(i-b+1,i+1)))/2})}return o};return{t:hh(0,9),k:hh(0,26),a:[],b:hh(0,52)}}
+function psar(h,l){let af=0.02,max=0.2,up=true,ep=h[0],sar=l[0];const o=[{i:0,v:sar}];for(let i=1;i<h.length;i++){sar=sar+af*(ep-sar);if(up){if(sar>l[i-1])sar=l[i-1];if(h[i]>ep){ep=h[i];af=Math.min(af+0.02,max)}}else{if(sar<h[i-1])sar=h[i-1];if(l[i]<ep){ep=l[i];af=Math.min(af+0.02,max)}}if(up&&l[i]<sar){up=false;sar=ep;ep=l[i];af=0.02}else if(!up&&h[i]>sar){up=true;sar=ep;ep=h[i];af=0.02}o.push({i,v:sar})}return o}
+function keltner(c,h,l,ep=20,ap=10,m=2){const e=emaA(c,ep),a=atrA(h,l,c,ap);const me={};e.forEach(x=>me[x.i]=x.v);const ma={};a.forEach(x=>ma[x.i]=x.v);const u=[],mi=[],lo=[];Object.keys(me).forEach(k=>{k=+k;if(ma[k]!=null){u.push({i:k,v:me[k]+m*ma[k]});mi.push({i:k,v:me[k]});lo.push({i:k,v:me[k]-m*ma[k]})}});return{u,mi,lo}}
+function donchian(h,l,p=20){const u=[],lo=[];for(let i=p-1;i<h.length;i++){u.push({i,v:Math.max(...h.slice(i-p+1,i+1))});lo.push({i,v:Math.min(...l.slice(i-p+1,i+1))})}return{u,lo}}
+// UI
+const sel=document.getElementById('symbolSel');
+UBASES.forEach(b=>{const o=document.createElement('option');o.value=b;o.textContent=b;if(b==="BTC")o.selected=true;sel.appendChild(o)});
+document.getElementById('cnt').innerText=UBASES.length;
+const box=document.getElementById('watchList');
+UBASES.forEach(b=>{const d=document.createElement('div');d.className='w';d.dataset.b=b;d.innerHTML=`<span class="n">${b}</span><span style="text-align:left"><div class="p" id="p_${b}">...</div><div class="c" id="c_${b}"></div></span>`;d.onclick=()=>setBase(b);box.appendChild(d)});
+function filterList(q){q=q.toLowerCase();document.querySelectorAll('.w').forEach(el=>el.style.display=el.innerText.toLowerCase().includes(q)?'flex':'none')}
+function setMode(m){MODE=m;document.getElementById('mUSDT').classList.toggle('on',m==='USDT');document.getElementById('mIRT').classList.toggle('on',m==='IRT');paintAll();paintHeader()}
+function markSel(){document.querySelectorAll('.w').forEach(el=>el.classList.toggle('sel',el.dataset.b===BASE));sel.value=BASE}
+function init(){
+chart=LightweightCharts.createChart(document.getElementById('tvChart'),{layout:{background:{color:'#131722'},textColor:'#d1d4dc'},grid:{vertLines:{color:'rgba(42,46,57,.5)'},horzLines:{color:'rgba(42,46,57,.5)'}},timeScale:{timeVisible:true,borderColor:'#2a2e39'},rightPriceScale:{borderColor:'#2a2e39'}});
+candleS=chart.addCandlestickSeries({upColor:'#26a69a',downColor:'#ef5350',wickUpColor:'#26a69a',wickDownColor:'#ef5350',borderVisible:false,priceScaleId:'right'});
+volS=chart.addHistogramSeries({priceScaleId:'vol',priceFormat:{type:'volume'}});chart.priceScale('vol').applyOptions({scaleMargins:{top:0.85,bottom:0}});
+emaS=chart.addLineSeries({color:'#2962ff',lineWidth:2,priceLineVisible:false});
+ema50S=chart.addLineSeries({color:'#00e5ff',lineWidth:2,priceLineVisible:false});
+smaS=chart.addLineSeries({color:'#ff9800',lineWidth:2,priceLineVisible:false});
+bbU=chart.addLineSeries({color:'rgba(255,152,0,.7)',lineWidth:1,priceLineVisible:false});
+bbM=chart.addLineSeries({color:'rgba(255,152,0,.35)',lineWidth:1,priceLineVisible:false});
+bbL=chart.addLineSeries({color:'rgba(255,152,0,.7)',lineWidth:1,priceLineVisible:false});
+vwapS=chart.addLineSeries({color:'#00bcd4',lineWidth:2,priceLineVisible:false});
+supS=chart.addLineSeries({color:'#76ff03',lineWidth:2,priceLineVisible:false});
+ichiT=chart.addLineSeries({color:'#d500f9',lineWidth:1,priceLineVisible:false});
+ichiK=chart.addLineSeries({color:'#ff3d00',lineWidth:1,priceLineVisible:false});
+ichiA=chart.addLineSeries({color:'rgba(38,166,154,.5)',lineWidth:1,priceLineVisible:false});
+ichiB=chart.addLineSeries({color:'rgba(239,83,80,.5)',lineWidth:1,priceLineVisible:false});
+sarS=chart.addLineSeries({color:'#ffeb3b',lineWidth:1,priceLineVisible:false});
+keltU=chart.addLineSeries({color:'#18ffff',lineWidth:1,priceLineVisible:false,lineStyle:2});
+keltM=chart.addLineSeries({color:'#18ffff',lineWidth:1,priceLineVisible:false});
+keltL=chart.addLineSeries({color:'#18ffff',lineWidth:1,priceLineVisible:false,lineStyle:2});
+donU=chart.addLineSeries({color:'#b388ff',lineWidth:1,priceLineVisible:false,lineStyle:2});
+donL=chart.addLineSeries({color:'#b388ff',lineWidth:1,priceLineVisible:false,lineStyle:2});
+sub1C=LightweightCharts.createChart(document.getElementById('sub1'),{layout:{background:{color:'#131722'},textColor:'#787b86'},grid:{vertLines:{color:'rgba(42,46,57,.4)'},horzLines:{color:'rgba(42,46,57,.4)'}},timeScale:{timeVisible:true,borderColor:'#2a2e39'},rightPriceScale:{borderColor:'#2a2e39'}});
+rsiS=sub1C.addLineSeries({color:'#7E57C2',lineWidth:2,priceLineVisible:false});
+stochK=sub1C.addLineSeries({color:'#2962ff',lineWidth:2,priceLineVisible:false});
+stochD=sub1C.addLineSeries({color:'#ff9800',lineWidth:1,priceLineVisible:false});
+willS=sub1C.addLineSeries({color:'#ec407a',lineWidth:2,priceLineVisible:false});
+mfiS=sub1C.addLineSeries({color:'#00e676',lineWidth:2,priceLineVisible:false});
+cciS=sub1C.addLineSeries({color:'#e040fb',lineWidth:2,priceLineVisible:false,priceScaleId:'left'});
+sub2C=LightweightCharts.createChart(document.getElementById('sub2'),{layout:{background:{color:'#131722'},textColor:'#787b86'},grid:{vertLines:{color:'rgba(42,46,57,.4)'},horzLines:{color:'rgba(42,46,57,.4)'}},timeScale:{timeVisible:true,borderColor:'#2a2e39'},rightPriceScale:{borderColor:'#2a2e39'}});
+macdL=sub2C.addLineSeries({color:'#26a69a',lineWidth:2,priceLineVisible:false});
+macdS=sub2C.addLineSeries({color:'#ff6d00',lineWidth:1,priceLineVisible:false});
+macdH=sub2C.addHistogramSeries({priceLineVisible:false});
+atrS=sub2C.addLineSeries({color:'#00bcd4',lineWidth:2,priceLineVisible:false});
+adxS=sub2C.addLineSeries({color:'#ffeb3b',lineWidth:2,priceLineVisible:false});
+obvS=sub2C.addLineSeries({color:'#8bc34a',lineWidth:2,priceLineVisible:false,priceScaleId:'left'});
+rocS=sub2C.addLineSeries({color:'#ff5722',lineWidth:2,priceLineVisible:false});
+momS=sub2C.addLineSeries({color:'#03a9f4',lineWidth:2,priceLineVisible:false});
+chart.timeScale().subscribeVisibleLogicalRangeChange(r=>{if(r){sub1C.timeScale().setVisibleLogicalRange(r);sub2C.timeScale().setVisibleLogicalRange(r)}});
+document.querySelectorAll('#tfBar button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#tfBar button').forEach(x=>x.classList.remove('active'));b.classList.add('active');INTERVAL=b.dataset.t;load()});
+load();loadNobitex();setInterval(loadNobitex,20000);
+}
+async function loadNobitex(){
+try{
+const r=await fetch('https://apiv2.nobitex.ir/market/stats',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+const j=await r.json();stats=j.stats||{};
+const u=stats['usdt-rls'];if(u&&u.latest)usdtIrt=parseFloat(u.latest);
+document.getElementById('usdtirt').innerText='$≈'+Math.round(usdtIrt).toLocaleString();
+paintAll();paintHeader();
+document.getElementById('dot').classList.add('ok');document.getElementById('stText').innerText='زنده • '+UBASES.length+' ارز';
+}catch(e){}
+}
+function fmtT(x){if(x>=1e9)return (x/1e9).toFixed(2)+'B';if(x>=1e6)return (x/1e6).toFixed(2)+'M';if(x>=1e3)return (x/1e3).toFixed(1)+'K';return Math.round(x).toString()}
+function paintAll(){
+UBASES.forEach(b=>{
+const low=b.toLowerCase().replace(/[^a-z0-9]/g,"");
+let key=Object.keys(stats).find(k=>k.startsWith(low+'-'));
+let su=stats[low+'-usdt']||stats[b.toLowerCase()+'-usdt'],sr=stats[low+'-rls']||stats[b.toLowerCase()+'-rls'];
+// نوبیتکس کلیدها مثل btc-usdt با حروف کوچک
+let price=null,ch=null;
+if(MODE==='USDT'&&su){price=parseFloat(su.latest);ch=parseFloat(su.dayChange)}
+else if(MODE==='IRT'&&sr){price=parseFloat(sr.latest);ch=parseFloat(sr.dayChange)}
+else if(su){price=parseFloat(su.latest);ch=parseFloat(su.dayChange)}
+else if(sr){price=parseFloat(sr.latest);ch=parseFloat(sr.dayChange)}
+if(price==null||isNaN(price))return;
+const col=ch>=0?'#26a69a':'#ef5350';
+const pe=document.getElementById('p_'+b);if(pe)pe.innerHTML=`<span style="color:${col}">${MODE==='IRT'?fmtT(price):price}</span>`;
+const ce=document.getElementById('c_'+b);if(ce)ce.innerHTML=`<span style="color:${col}">${ch>=0?'▲':'▼'}${Math.abs(ch).toFixed(2)}%</span>`;
+});
+}
+function paintHeader(){
+const low=BASE.toLowerCase();
+const su=stats[low+'-usdt'],sr=stats[low+'-rls'];
+let t='';
+if(su)t+=`$${parseFloat(su.latest)} `;
+if(sr)t+=`| ${fmtT(parseFloat(sr.latest))}T `;
+document.getElementById('priceBox').innerHTML=`<b>${BASE}</b> ${t}`;
+}
+async function load(){
+if(wsChart)wsChart.close();
+binSym=toBinance(BASE);markSel();
+const notice=document.getElementById('notice');
+if(!binSym){notice.style.display='block';notice.innerText='سهام خارجی - فقط قیمت نوبیتکس';return}
+notice.style.display='none';
+try{
+const r=await fetch(`https://api.binance.com/api/v3/klines?symbol=${binSym}&interval=${TFMAP[INTERVAL]}&limit=300`);
+const j=await r.json();if(!Array.isArray(j))throw 0;
+candles=j.map(d=>({time:d[0]/1000,open:+d[1],high:+d[2],low:+d[3],close:+d[4],vol:+d[5]}));
+}catch(e){notice.style.display='block';notice.innerText='کندل بایننس برای '+binSym+' نیست - قیمت نوبیتکس زنده است';return}
+candleS.setData(candles);
+volS.setData(candles.map(c=>({time:c.time,value:c.vol,color:c.close>=c.open?'rgba(38,166,154,.5)':'rgba(239,83,80,.5)'})));
+drawInd();
+wsChart=new WebSocket(`wss://stream.binance.com:9443/ws/${binSym.toLowerCase()}@kline_${TFMAP[INTERVAL]}`);
+wsChart.onmessage=e=>{const k=JSON.parse(e.data).k;const c={time:k.t/1000,open:+k.o,high:+k.h,low:+k.l,close:+k.c,vol:+k.v};const l=candles[candles.length-1];if(c.time===l.time)Object.assign(l,c);else candles.push(c);candleS.update({time:c.time,open:c.open,high:c.high,low:c.low,close:c.close});volS.update({time:c.time,value:c.vol,color:c.close>=c.open?'rgba(38,166,154,.5)':'rgba(239,83,80,.5)'});clearTimeout(window._t);window._t=setTimeout(drawInd,900)};
+}
+function drawInd(){
+if(!candles.length)return;
+const closes=candles.map(c=>c.close),H=candles.map(c=>c.high),L=candles.map(c=>c.low),V=candles.map(c=>c.vol),T=candles.map(c=>c.time);
+const put=(s,arr)=>s.setData(arr.map(x=>({time:T[x.i],value:x.v})));
+volS.applyOptions({visible:!!show.vol});
+show.ema?(emaS.applyOptions({visible:true}),put(emaS,emaA(closes,20))):emaS.applyOptions({visible:false});
+show.ema50?(ema50S.applyOptions({visible:true}),put(ema50S,emaA(closes,50))):ema50S.applyOptions({visible:false});
+show.sma?(smaS.applyOptions({visible:true}),put(smaS,smaA(closes,50))):smaS.applyOptions({visible:false});
+if(show.bb){const b=bbA(closes);put(bbU,b.map(x=>({i:x.i,v:x.u})));put(bbM,b.map(x=>({i:x.i,v:x.mid})));put(bbL,b.map(x=>({i:x.i,v:x.l})));[bbU,bbM,bbL].forEach(s=>s.applyOptions({visible:true}))}else[bbU,bbM,bbL].forEach(s=>s.applyOptions({visible:false}));
+if(show.vwap){let p=0,v=0;const vv=candles.map((c,i)=>{const tp=(c.high+c.low+c.close)/3;p+=tp*c.vol;v+=c.vol;return{i,v:p/v}});put(vwapS,vv.slice(20));vwapS.applyOptions({visible:true})}else vwapS.applyOptions({visible:false});
+show.sup?(supS.applyOptions({visible:true}),put(supS,supertrend(H,L,closes))):supS.applyOptions({visible:false});
+if(show.ichi){const ic=ichimoku(H,L,closes);put(ichiT,ic.t);put(ichiK,ic.k);[ichiT,ichiK].forEach(s=>s.applyOptions({visible:true}));ichiA.applyOptions({visible:false});ichiB.applyOptions({visible:false})}else[ichiT,ichiK,ichiA,ichiB].forEach(s=>s.applyOptions({visible:false}));
+show.sar?(sarS.applyOptions({visible:true}),put(sarS,psar(H,L))):sarS.applyOptions({visible:false});
+if(show.kelt){const k=keltner(closes,H,L);put(keltU,k.u);put(keltM,k.mi);put(keltL,k.lo);[keltU,keltM,keltL].forEach(s=>s.applyOptions({visible:true}))}else[keltU,keltM,keltL].forEach(s=>s.applyOptions({visible:false}));
+if(show.don){const d=donchian(H,L);put(donU,d.u);put(donL,d.lo);[donU,donL].forEach(s=>s.applyOptions({visible:true}))}else[donU,donL].forEach(s=>s.applyOptions({visible:false}));
+// sub1 - همه همزمان
+show.rsi?(rsiS.applyOptions({visible:true}),put(rsiS,rsiA(closes))):rsiS.applyOptions({visible:false});
+if(show.stoch){const s=stochA(closes,H,L);put(stochK,s.k);put(stochD,s.d);stochK.applyOptions({visible:true});stochD.applyOptions({visible:true})}else{stochK.applyOptions({visible:false});stochD.applyOptions({visible:false})}
+show.will?(willS.applyOptions({visible:true}),put(willS,willA(H,L,closes))):willS.applyOptions({visible:false});
+show.mfi?(mfiS.applyOptions({visible:true}),put(mfiS,mfiA(H,L,closes,V))):mfiS.applyOptions({visible:false});
+show.cci?(cciS.applyOptions({visible:true}),put(cciS,cciA(H,L,closes))):cciS.applyOptions({visible:false});
+// sub2 - همه همزمان
+if(show.macd){const m=macdA(closes);put(macdL,m.line);put(macdS,m.sig);macdH.setData(m.line.map((x,i)=>{const s=m.sig.find(y=>y.i===x.i);return{time:T[x.i],value:x.v-(s?s.v:0),color:x.v>=(s?s.v:0)?'rgba(38,166,154,.6)':'rgba(239,83,80,.6)'}}));[macdL,macdS,macdH].forEach(s=>s.applyOptions({visible:true}))}else[macdL,macdS,macdH].forEach(s=>s.applyOptions({visible:false}));
+show.atr?(atrS.applyOptions({visible:true}),put(atrS,atrA(H,L,closes))):atrS.applyOptions({visible:false});
+show.adx?(adxS.applyOptions({visible:true}),put(adxS,adxA(H,L,closes))):adxS.applyOptions({visible:false});
+show.obv?(obvS.applyOptions({visible:true}),put(obvS,obvA(closes,V))):obvS.applyOptions({visible:false});
+show.roc?(rocS.applyOptions({visible:true}),put(rocS,rocA(closes))):rocS.applyOptions({visible:false});
+show.mom?(momS.applyOptions({visible:true}),put(momS,momA(closes))):momS.applyOptions({visible:false});
+}
+function tog(k){show[k]=!show[k];const id={vol:'bVOL',ema:'bEMA',ema50:'bEMA50',sma:'bSMA',bb:'bBB',vwap:'bVWAP',sup:'bSUP',ichi:'bICHI',sar:'bSAR',kelt:'bKELT',don:'bDON',rsi:'bRSI',stoch:'bSTOCH',will:'bWILL',mfi:'bMFI',cci:'bCCI',macd:'bMACD',atr:'bATR',adx:'bADX',obv:'bOBV',roc:'bROC',mom:'bMOM'}[k];document.getElementById(id).classList.toggle('on',show[k]);drawInd()}
+function setBase(b){BASE=b;load()}
+init();
+</script>
+<script>window.__CF$cv$params={r:'a535aba54d13b144',t:'MTc5MzQ4MTI3OA==',u:'01a193d084b876f885a6eba437b78453',ut:'.2sU5sI5Ge80oK3sKhmSGraaMBc.7jbleuaVxfspzmE-1793481278-1.2.1.1-3ootC50KzXWsznQxewvcJp3NZeIju6Gg0J4rFyMU7ZC.g4iNxM7GNKiizJKBywkVJZ4bl3Wz_RUA4Bvg41vS3gQtk0MgsVWkJ6x8sg48Jok',i:60};(function(){if(!document.body)return;var l=window.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/precursor/main.js?ray=a535aba54d13b144',s=document.createElement('script');s.src=o?new URL(u,o).href:u;document.head.appendChild(s);})();</script></body>
+</html>
